@@ -4,6 +4,8 @@ U-Net vs. threshold baselines for Sentinel-1 flood segmentation on the hand-labe
 
 A U-Net (ResNet34 encoder, PyTorch) trained on Sentinel-1 VV and VH backscatter reaches **IoU 0.675** on the official test split, against **0.592** for the best speckle-filtered dB threshold (0.533 without filtering). On the held-out Bolivia event, which no method saw during development, the filtered threshold does better than the U-Net (**0.617 vs. 0.576**).
 
+**In plain terms:** Sentinel-1 is a radar satellite that can see through clouds, day and night. Calm water reflects the radar signal away from the satellite, so floods look dark in its images. The simplest way to map a flood is to call every pixel darker than a chosen value "water" (a *threshold*). This project tests whether a deep-learning model that also looks at shapes and surroundings does better. Results are scored with *IoU* (intersection over union): the overlap between the mapped water and the true water, from 0 (no overlap) to 1 (perfect match). Other terms are explained in the [glossary](#glossary).
+
 ![Example: threshold vs. U-Net on a test chip](figures/example_2_Pakistan_694942.png)
 
 ## Results
@@ -155,6 +157,76 @@ figures/                   example figures
 ## Reproducing
 
 The notebooks run on Google Colab (free T4 GPU). Run them in order; `01_explore_data.ipynb` downloads the hand-labelled chips and split files (~730 MB) to `MyDrive/sen1floods11` on Google Drive, and the later notebooks clone this repository to import `src/`. Package versions are listed in [requirements.txt](requirements.txt).
+
+## Glossary
+
+**Satellite and radar**
+
+| Term | Meaning |
+|---|---|
+| Sentinel-1 | Pair of European Space Agency radar satellites (Copernicus programme) whose images are free to use. |
+| SAR | Synthetic aperture radar. The satellite sends microwave pulses and records the echo, so it works at night and through clouds. |
+| Backscatter | The share of the radar signal that returns to the satellite. Calm water returns very little and looks dark; rough or built-up surfaces look bright. |
+| dB | Decibel, the logarithmic unit used for backscatter. More negative values are darker. |
+| VV, VH | Polarisations. VV: the signal is sent and received vertically. VH: sent vertically, received horizontally; more sensitive to vegetation. |
+| IW GRD | Interferometric Wide swath, Ground Range Detected: the standard Sentinel-1 image product used here. |
+| Speckle | Grainy noise that is always present in radar images, even over uniform surfaces. |
+| Lee filter | Classic radar speckle filter: smooths each pixel towards its neighbours' average, strongly in flat areas and weakly at edges. |
+| Median filter | Replaces each pixel with the middle value of its neighbourhood (here 5 × 5 pixels). |
+| ENL | Equivalent number of looks: a measure of how strong the speckle is; the Lee filter needs it as a setting. |
+
+**Data and evaluation set-up**
+
+| Term | Meaning |
+|---|---|
+| Sen1Floods11 | Public benchmark dataset of Sentinel-1 flood images from 11 flood events, with water masks. |
+| Chip | One image tile, 512 × 512 pixels at 10 m, about 5 × 5 km. |
+| Hand-labelled | Water drawn by a person (here using optical Sentinel-2 images as a guide), rather than by an algorithm. |
+| No data (−1) | Pixels without a label (often clouds in the optical guide image) or without radar data. They are ignored in all scores. |
+| Train / validation / test split | Data used to fit a method / to choose settings / to measure the final result. Keeping them separate prevents over-optimistic scores. |
+| Hold-out (Bolivia) | An extra test set from a flood event that appears in no other split, to see how methods work on a new event. |
+| Pooled | Scores computed from all pixels of a split together, rather than averaged per chip. |
+
+**Methods**
+
+| Term | Meaning |
+|---|---|
+| Threshold | Rule "water if backscatter is below X dB". |
+| Otsu | Automatic method (Nobuyuki Otsu, 1979) that picks the threshold that best splits an image's brightness histogram into two groups. |
+| Deep learning | Machine learning with neural networks: many layers of simple calculations whose settings (weights) are learned from examples. |
+| Segmentation | Assigning a class (here water / not water) to every pixel of an image. |
+| U-Net | A neural network for segmentation (Ronneberger et al., 2015). It shrinks the image to recognise patterns, then enlarges it back to full size; "skip connections" carry fine detail across, giving the U shape. |
+| ResNet34 | A well-known 34-layer image network, used as the pattern-recognising half (the *encoder*) of the U-Net. |
+| ImageNet weights | Weights learned on ImageNet, a large collection of everyday photos, used as a starting point instead of random values. |
+| Loss | The error score that training tries to reduce. |
+| BCE | Binary cross-entropy: a loss that scores each pixel's predicted probability against its label. |
+| Dice | A loss based on the overlap between predicted and true water areas, closely related to IoU. |
+| Augmentation | Randomly flipping and rotating training images so the model sees more variety. |
+| Epoch | One full pass through all training chips. |
+| Adam, learning rate | Adam is a standard algorithm for adjusting the weights during training; the learning rate is the size of each adjustment. |
+| Checkpoint | Saved copy of the model's weights, here from the epoch with the best validation score. |
+
+**Scores**
+
+| Term | Meaning |
+|---|---|
+| IoU | Intersection over union: overlap of mapped and true water divided by their combined area. 1 = perfect. Main score used here. |
+| Precision | Of the pixels mapped as water, the share that really is water. Low precision = many false alarms. |
+| Recall | Of the real water, the share that was found. Low recall = much water missed. |
+| F1 | Single score combining precision and recall (their harmonic mean). |
+| Accuracy | Share of all pixels classified correctly. Misleading here because most pixels are not water. |
+
+**Tools**
+
+| Term | Meaning |
+|---|---|
+| Python | Programming language used throughout. |
+| PyTorch | Python library for building and training neural networks. |
+| segmentation_models_pytorch | Python library providing ready-made U-Net and similar models. |
+| Google Colab | Free online Python notebooks from Google, with access to a GPU. |
+| GPU (T4) | Graphics processor that speeds up neural-network training; Colab's free tier provides an NVIDIA T4. |
+| Notebook (.ipynb) | A document mixing code, its output and explanations. |
+| CSV | Plain-text table file, readable in Excel. |
 
 ## Citation
 

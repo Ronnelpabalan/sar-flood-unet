@@ -4,9 +4,42 @@ U-Net vs. threshold baselines for Sentinel-1 flood segmentation on the hand-labe
 
 A U-Net (ResNet34 encoder, PyTorch) trained on Sentinel-1 VV and VH backscatter reaches **IoU 0.675** on the official test split, against **0.592** for the best speckle-filtered dB threshold (0.533 without filtering). On the held-out Bolivia event, which no method saw during development, the filtered threshold does better than the U-Net (**0.617 vs. 0.576**).
 
-**In plain terms:** Sentinel-1 is a radar satellite that can see through clouds, day and night. Calm water reflects the radar signal away from the satellite, so floods look dark in its images. The simplest way to map a flood is to call every pixel darker than a chosen value "water" (a *threshold*). This project tests whether a deep-learning model that also looks at shapes and surroundings does better. Results are scored with *IoU* (intersection over union): the overlap between the mapped water and the true water, from 0 (no overlap) to 1 (perfect match). Other terms are explained in the [glossary](#glossary).
+New to radar or deep learning? Start with [the project in plain words](#the-project-in-plain-words); technical terms are explained in the [glossary](#glossary).
 
 ![Example: threshold vs. U-Net on a test chip](figures/example_2_Pakistan_694942.png)
+
+## The project in plain words
+
+**The question.** After a flood, people need a map of where the water is. Radar satellites such as Sentinel-1 can photograph floods even through clouds, and in their images water looks dark. The usual way to make a flood map is a simple rule: anything darker than a certain value is water (a *threshold*). This project asks whether a computer model that has *learned* what floods look like makes a better map than that rule.
+
+**The data.** 446 small radar images from 11 real floods around the world, in which people carefully drew the true water by hand. These are the correct answers. The images are split into groups, like a student's homework, practice test and final exam:
+
+- **Training** (252 images): used to learn from.
+- **Validation** (89 images): used to check progress and pick the best version.
+- **Test** (90 images): used only once, at the end, for the final score.
+- **Bolivia** (15 images): a flood that no method saw during development, to see how each copes with something new.
+
+**What was done.**
+
+1. **Looked at the data.** Water is mostly darker than land, but not always: some water, such as flooded crops or water roughened by wind, looks almost as bright as land, and no simple rule can catch it.
+2. **Built the simple-rule methods.** Several versions of "darker than X is water" were tested. The best one first *cleans* the image with a speckle filter, which removes the grainy noise found in all radar images.
+3. **Trained a deep-learning model (a U-Net).** Instead of judging one pixel at a time, it looks at shapes and surroundings, as a person reading a map would. It learned by studying the 252 training images 40 times over (about 15 minutes on a free Google computer).
+4. **Took the final exam.** Every method was scored on the test images, which none of them had seen, using the same pixels and the same rules for all.
+5. **Studied the mistakes** using maps of where each method was right and wrong.
+
+**What was found.** The score is IoU: the overlap between the mapped water and the real water, from 0 (no overlap) to 1 (a perfect map). Values are rounded here; exact numbers are in [Results](#results).
+
+| | Simple rule, cleaned image | Learned model (U-Net) |
+|---|---|---|
+| Final exam (test) | 0.59 | **0.68** |
+| New flood (Bolivia) | **0.62** | 0.58 |
+
+- **On floods like the ones it learned from, the learned model is clearly better.** It finds more of the water and draws cleaner shapes without speckle "freckles".
+- **On a completely new flood, the cleaned simple rule did slightly better.** The model partly learned what those particular floods look like, while the rule is based on physics and works about equally well everywhere.
+- **Cleaning the image first matters a lot.** It closed about 40% of the gap between the simple rule and the model.
+- **Both still miss water that does not look dark**, such as flooded fields with plants sticking out. An image from before the flood would probably help; that is a possible next step.
+
+**In one sentence:** deep learning makes better flood maps where it has been trained, but on a new flood it should be checked against local data first, and a well-cleaned simple threshold remains a reliable backup.
 
 ## Results
 

@@ -1,0 +1,4 @@
+method,split,iou,f1,precision,recall,accuracy
+U-Net (ResNet34),valid,0.681,0.81,0.832,0.789,0.959
+U-Net (ResNet34),test,0.675,0.806,0.819,0.793,0.953
+U-Net (ResNet34),bolivia,0.576,0.731,0.799,0.674,0.921

@@ -1,0 +1,11 @@
+# Versions used for the reported results (Google Colab, October 2026)
+torch==2.11.0
+segmentation-models-pytorch==0.5.0
+rasterio==1.5.2
+
+# Colab defaults at the time of the runs
+numpy
+pandas
+matplotlib
+scikit-image
+tqdm

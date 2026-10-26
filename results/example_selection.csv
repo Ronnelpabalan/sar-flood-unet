@@ -1,0 +1,7 @@
+chip,event,water_%,iou_vh,iou_unet,gain,why
+Somalia_94102,Somalia,5.2594,0.2359,0.7326,0.4967,largest U-Net gain
+Pakistan_694942,Pakistan,9.6535,0.265,0.7215,0.4565,largest U-Net gain
+India_952728,India,3.0988,0.0849,0.193,0.108,typical (median gain)
+India_399883,India,51.9962,0.655,0.7636,0.1086,typical (median gain)
+India_747992,India,44.7645,0.2891,0.1532,-0.1359,U-Net worst vs. threshold
+Somalia_685158,Somalia,13.7122,0.2775,0.2408,-0.0367,U-Net worst vs. threshold

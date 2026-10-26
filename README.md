@@ -2,7 +2,7 @@
 
 U-Net vs. threshold baselines for Sentinel-1 flood segmentation on the hand-labelled Sen1Floods11 dataset.
 
-A U-Net (ResNet34 encoder, PyTorch) trained on Sentinel-1 VV and VH backscatter reaches **IoU 0.675** on the official test split, against **0.533** for the best train-optimised dB threshold. On the held-out Bolivia event, which neither method saw during development, the gap narrows to **0.576 vs. 0.535**.
+A U-Net (ResNet34 encoder, PyTorch) trained on Sentinel-1 VV and VH backscatter reaches **IoU 0.675** on the official test split, against **0.592** for the best speckle-filtered dB threshold (0.533 without filtering). On the held-out Bolivia event, which no method saw during development, the filtered threshold does better than the U-Net (**0.617 vs. 0.576**).
 
 ![Example: threshold vs. U-Net on a test chip](figures/example_2_Pakistan_694942.png)
 
@@ -16,7 +16,11 @@ All methods are scored on exactly the same pixels: unlabelled pixels and pixels 
 |---|---|---|---|---|
 | Otsu on VV, per chip | 0.211 | 0.349 | 0.230 | 0.727 |
 | Fixed threshold VV < −16.8 dB | 0.464 | 0.634 | 0.774 | 0.536 |
+| Lee 5×5, VV < −15.8 dB | 0.486 | 0.654 | 0.804 | 0.552 |
+| Median 5×5, VV < −16.1 dB | 0.493 | 0.661 | 0.805 | 0.560 |
 | Fixed threshold VH < −23.6 dB | 0.533 | 0.695 | 0.747 | 0.650 |
+| Lee 5×5, VH < −23.0 dB | 0.585 | 0.738 | 0.809 | 0.678 |
+| Median 5×5, VH < −23.3 dB | 0.592 | 0.744 | 0.812 | 0.687 |
 | **U-Net (ResNet34)** | **0.675** | **0.806** | **0.819** | **0.793** |
 
 **Bolivia hold-out** (15 chips, one event not used for training or model selection)
@@ -25,37 +29,40 @@ All methods are scored on exactly the same pixels: unlabelled pixels and pixels 
 |---|---|---|---|---|
 | Otsu on VV, per chip | 0.350 | 0.519 | 0.378 | 0.826 |
 | Fixed threshold VV < −16.8 dB | 0.436 | 0.608 | 0.881 | 0.464 |
+| Median 5×5, VV < −16.1 dB | 0.515 | 0.680 | 0.911 | 0.542 |
+| Lee 5×5, VV < −15.8 dB | 0.516 | 0.680 | 0.907 | 0.544 |
 | Fixed threshold VH < −23.6 dB | 0.535 | 0.697 | 0.870 | 0.581 |
-| **U-Net (ResNet34)** | **0.576** | **0.731** | 0.799 | **0.674** |
+| U-Net (ResNet34) | 0.576 | 0.731 | 0.799 | **0.674** |
+| Lee 5×5, VH < −23.0 dB | 0.612 | 0.759 | 0.909 | 0.652 |
+| **Median 5×5, VH < −23.3 dB** | **0.617** | **0.763** | **0.914** | 0.655 |
 
 Main points:
 
-- On the test split the U-Net improves recall (0.65 → 0.79) and precision (0.75 → 0.82) at the same time.
-- Among the 46 test chips with at least 2% water, the U-Net beats the VH threshold on 42.
-- The U-Net beats the VH threshold on all 10 test events (IoU gain +0.08 to +0.22, table below).
-- The VH threshold scores almost the same on test and Bolivia (0.533 / 0.535); the U-Net drops from 0.675 to 0.576. The learned model transfers less well to an unseen event than the simple threshold. Bolivia is one event of 15 chips, so the size of this drop is uncertain, but it is a reason to validate on local labelled data before using such a model in a new basin.
-- VH separates water better than VV on this dataset (0.533 vs. 0.464 IoU), although many workflows threshold VV by default.
+- **Speckle filtering matters.** A 5×5 median or Lee filter before thresholding raises test IoU from 0.533 to 0.592 (VH), closing about 40% of the gap between the unfiltered threshold and the U-Net. Part of what the U-Net learns is, in effect, speckle suppression.
+- **On the test split the U-Net is still clearly better**: +0.083 IoU over the best filtered threshold, with higher recall (0.79 vs. 0.69) at similar precision (0.82 vs. 0.81). It beats the filtered threshold on 9 of 10 test events; the exception is Sri Lanka (0.801 vs. 0.858).
+- **On the unseen Bolivia event the filtered threshold is better** (0.617 vs. 0.576), mainly through precision (0.91 vs. 0.80). The thresholds score similarly on test and Bolivia; the U-Net drops from 0.675 to 0.576. The learned model transfers less well to a new event than a simple physical rule. Bolivia is one event of 15 chips, so the size of this effect is uncertain, but it is a reason to validate on local labelled data before using such a model in a new basin.
+- VH separates water better than VV on this dataset, with or without filtering, although many workflows threshold VV by default.
 
 **Test IoU per flood event**
 
-| Event | Chips | Fixed VV | Fixed VH | U-Net |
-|---|---|---|---|---|
-| Nigeria | 4 | 0.696 | 0.713 | 0.889 |
-| Mekong | 6 | 0.739 | 0.724 | 0.830 |
-| Sri Lanka | 9 | 0.203 | 0.717 | 0.801 |
-| Spain | 6 | 0.621 | 0.640 | 0.732 |
-| India | 14 | 0.636 | 0.593 | 0.669 |
-| Paraguay | 14 | 0.494 | 0.466 | 0.659 |
-| Ghana | 11 | 0.387 | 0.453 | 0.582 |
-| USA | 14 | 0.327 | 0.379 | 0.582 |
-| Somalia | 6 | 0.179 | 0.256 | 0.471 |
-| Pakistan | 6 | 0.117 | 0.150 | 0.311 |
+| Event | Chips | Fixed VV | Fixed VH | Median 5×5 VH | U-Net |
+|---|---|---|---|---|---|
+| Nigeria | 4 | 0.696 | 0.713 | 0.785 | 0.889 |
+| Mekong | 6 | 0.739 | 0.724 | 0.741 | 0.830 |
+| Sri Lanka | 9 | 0.203 | 0.717 | **0.858** | 0.801 |
+| Spain | 6 | 0.621 | 0.640 | 0.674 | 0.732 |
+| India | 14 | 0.636 | 0.593 | 0.650 | 0.669 |
+| Paraguay | 14 | 0.494 | 0.466 | 0.490 | 0.659 |
+| Ghana | 11 | 0.387 | 0.453 | 0.474 | 0.582 |
+| USA | 14 | 0.327 | 0.379 | 0.500 | 0.582 |
+| Somalia | 6 | 0.179 | 0.256 | 0.278 | 0.471 |
+| Pakistan | 6 | 0.117 | 0.150 | 0.151 | 0.311 |
 
 Several events have only 4–6 test chips, so single-event values are indicative only.
 
 ## Examples
 
-Six test chips, chosen by a fixed rule rather than by eye: among test chips with at least 2% water, the two with the largest U-Net gain over the VH threshold, the two at the median gain, and the two where the U-Net does worst relative to the threshold ([selection table](results/example_selection.csv)).
+Six test chips, chosen by a fixed rule rather than by eye: among test chips with at least 2% water, the two with the largest U-Net gain over the unfiltered VH threshold, the two at the median gain, and the two where the U-Net does worst relative to the threshold ([selection table](results/example_selection.csv)). Against the unfiltered VH threshold, the U-Net is better on 42 of these 46 chips.
 
 Columns: Sentinel-1 VV (dB) · hand label · VH threshold errors · U-Net errors.
 Blue = water found, red = false water, gold = missed water, grey = no label (ignored).
@@ -77,7 +84,7 @@ Blue = water found, red = false water, gold = missed water, grey = no label (ign
 
 ## What the errors show
 
-1. **Threshold errors are scattered pixels; U-Net errors are whole regions.** The threshold judges each pixel on its own, so speckle produces salt-and-pepper noise, both false water on dark land and gaps inside real water. The U-Net uses spatial context and produces connected, smoother water bodies. When it is wrong, though, it is wrong over whole patches (India_399883, Somalia_685158).
+1. **Threshold errors are scattered pixels; U-Net errors are whole regions.** The unfiltered threshold judges each pixel on its own, so speckle produces salt-and-pepper noise, both false water on dark land and gaps inside real water. A speckle filter removes part of this noise (see the filtered-threshold results above); the U-Net goes further and produces connected, smoother water bodies. When it is wrong, though, it is wrong over whole patches (India_399883, Somalia_685158).
 2. **Most of the gain comes from removing false alarms on dark land.** In arid or bare-field scenes (Somalia_94102, Pakistan_694942), the threshold marks large dark areas as water; the U-Net largely ignores them.
 3. **Neither method finds water that does not look dark.** In India_747992, 45% of the chip is labelled water but most of it has moderate VV backscatter with a field pattern, probably flooded vegetation or crops. The threshold catches some of it pixel by pixel; the U-Net misses almost all of it. This matches the training-set histogram, where labelled water has a second VV mode around −12 dB that overlaps the land distribution. A single post-event intensity image cannot separate these pixels; a pre-event image (change detection) would be the natural next step.
 4. **Small, scattered water bodies remain hard** (India_952728: IoU 0.08 → 0.19).
@@ -105,6 +112,7 @@ Data are downloaded from the public bucket `gs://sen1floods11` and are not inclu
 **Thresholds** ([02_baseline.ipynb](notebooks/02_baseline.ipynb))
 - *Otsu on VV, per chip:* threshold computed from each chip's own VV histogram; no labels used.
 - *Fixed VV and VH thresholds:* swept from −40 to +5 dB in 0.1 dB steps on the **train split only**; the value with the best pooled IoU is kept (VV −16.8 dB, VH −23.6 dB) and applied unchanged to the other splits.
+- *Speckle-filtered thresholds* ([05_extra_baselines.ipynb](notebooks/05_extra_baselines.ipynb), [src/filters.py](src/filters.py)): each band filtered with a 5×5 Lee filter (in linear power, nominal ENL 4.4 for Sentinel-1 IW GRDH) or a 5×5 median filter, then a threshold re-tuned on train in the same way. The median-filtered VH threshold has the best train IoU (0.511, vs. 0.502 for Lee), so it is the filtered baseline used in the per-event table.
 
 **U-Net** ([03_unet_training.ipynb](notebooks/03_unet_training.ipynb), [src/](src))
 - `segmentation_models_pytorch` U-Net, ResNet34 encoder initialised from ImageNet, 2 input channels (VV, VH), 1 output channel.
@@ -134,8 +142,10 @@ notebooks/
   02_baseline.ipynb        Otsu and fixed-threshold baselines
   03_unet_training.ipynb   U-Net training
   04_evaluation.ipynb      test / Bolivia evaluation, per-event results, figures
+  05_extra_baselines.ipynb speckle-filtered (Lee, median) threshold baselines
 src/
   dataset.py               PyTorch Dataset: loading, clipping, masking, augmentation
+  filters.py               NaN-tolerant Lee and median speckle filters
   losses.py                BCE + Dice loss that ignores unlabelled pixels
   metrics.py               valid-pixel mask and pooled IoU / F1 / precision / recall
 results/                   metric CSVs (baselines, U-Net, per event, per chip, training log)

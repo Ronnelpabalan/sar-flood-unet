@@ -1,0 +1,13 @@
+method,split,iou,f1,precision,recall,accuracy
+Otsu VV (per chip),train,0.166,0.285,0.176,0.743,0.645
+Otsu VV (per chip),valid,0.188,0.316,0.203,0.717,0.658
+Otsu VV (per chip),test,0.211,0.349,0.23,0.727,0.666
+Otsu VV (per chip),bolivia,0.35,0.519,0.378,0.826,0.755
+Fixed VV < -16.8 dB,train,0.429,0.601,0.718,0.516,0.935
+Fixed VV < -16.8 dB,valid,0.465,0.635,0.772,0.539,0.932
+Fixed VV < -16.8 dB,test,0.464,0.634,0.774,0.536,0.924
+Fixed VV < -16.8 dB,bolivia,0.436,0.608,0.881,0.464,0.904
+Fixed VH < -23.6 dB,train,0.465,0.635,0.661,0.611,0.933
+Fixed VH < -23.6 dB,valid,0.493,0.66,0.708,0.619,0.93
+Fixed VH < -23.6 dB,test,0.533,0.695,0.747,0.65,0.93
+Fixed VH < -23.6 dB,bolivia,0.535,0.697,0.87,0.581,0.919
